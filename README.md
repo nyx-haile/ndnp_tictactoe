@@ -43,6 +43,12 @@ print(result.returns)
 
 Invalid actions and coordinates raise `InvalidMoveError`. The CLI catches those exceptions and asks the same player to retry.
 
+### Restoring a board
+
+Pass a NumPy array as `board` to restore a position. The constructor copies the array and derives its result state: a winning line takes precedence over a full-board draw, while a board with empty cells and no winner remains playable. For a playable restored board, the supplied `current_player` is preserved rather than inferred from mark counts.
+
+If one player has multiple winning lines, the engine exposes the first line found in deterministic coordinate and direction order. A board containing winning lines for different players raises `InvalidConfigurationError` because it cannot represent one valid terminal result. The engine does not otherwise reconstruct or validate move history.
+
 ## Tests
 
 Install the minimal dependencies if needed, then run pytest:

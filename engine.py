@@ -67,9 +67,7 @@ class TicTacToeND:
         self._terminal = False
         self._winning_line: tuple[Coordinate, ...] = ()
 
-        if self._occupied == self.board.size:
-            self._terminal = True
-            self._draw = True
+        self._hydrate_state()
 
     @staticmethod
     def _positive_int(value: int, name: str) -> int:
@@ -89,6 +87,32 @@ class TicTacToeND:
             if first_nonzero > 0:
                 directions.append(tuple(vector))
         return tuple(directions)
+
+    def _hydrate_state(self) -> None:
+        winner: int | None = None
+        winning_line: tuple[Coordinate, ...] = ()
+
+        for coordinate in np.ndindex(self.shape):
+            player = int(self.board[coordinate])
+            if player == 0:
+                continue
+
+            candidate = self._find_winning_line(coordinate, player)
+            if not candidate:
+                continue
+            if winner is not None and player != winner:
+                raise InvalidConfigurationError("board has winning lines for multiple players")
+            if winner is None:
+                winner = player
+                winning_line = candidate
+
+        if winner is not None:
+            self._winner = winner
+            self._terminal = True
+            self._winning_line = winning_line
+        elif self._occupied == self.board.size:
+            self._draw = True
+            self._terminal = True
 
     @property
     def shape(self) -> tuple[int, ...]:

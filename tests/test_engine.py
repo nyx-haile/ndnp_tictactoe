@@ -1,6 +1,7 @@
+import numpy as np
 import pytest
 
-from engine import InvalidMoveError, TicTacToeND
+from engine import InvalidConfigurationError, InvalidMoveError, TicTacToeND
 
 
 def play_moves(game, moves):
@@ -174,3 +175,116 @@ def test_result_exposes_current_player_and_legal_actions():
     assert after_one.current_player == 2
     assert len(after_one.legal_actions) == 8
     assert game.step(game.coord_to_action((0, 0))).current_player == 1
+
+
+def test_supplied_board_hydrates_winning_state():
+    game = TicTacToeND(
+        board=np.array(
+            [
+                [1, 1, 1],
+                [2, 2, 0],
+                [0, 0, 0],
+            ]
+        ),
+        current_player=2,
+    )
+
+    result = game.result()
+
+    assert result.terminal is True
+    assert result.winner == 1
+    assert result.draw is False
+    assert result.winning_line == ((0, 0), (0, 1), (0, 2))
+    assert result.current_player is None
+    assert result.legal_actions == ()
+    assert result.returns == (1.0, -1.0)
+
+
+def test_full_supplied_board_with_winner_is_not_a_draw():
+    game = TicTacToeND(
+        board=np.array(
+            [
+                [1, 1, 1],
+                [2, 2, 1],
+                [2, 1, 2],
+            ]
+        )
+    )
+
+    result = game.result()
+
+    assert result.terminal is True
+    assert result.winner == 1
+    assert result.draw is False
+    assert result.winning_line == ((0, 0), (0, 1), (0, 2))
+
+
+def test_full_supplied_board_without_winner_hydrates_draw():
+    game = TicTacToeND(
+        board=np.array(
+            [
+                [1, 2, 1],
+                [1, 2, 2],
+                [2, 1, 1],
+            ]
+        )
+    )
+
+    result = game.result()
+
+    assert result.terminal is True
+    assert result.winner is None
+    assert result.draw is True
+    assert result.winning_line == ()
+
+
+def test_live_supplied_board_preserves_explicit_current_player():
+    game = TicTacToeND(
+        board=np.array(
+            [
+                [1, 2, 0],
+                [0, 1, 0],
+                [0, 0, 0],
+            ]
+        ),
+        current_player=2,
+    )
+
+    result = game.result()
+
+    assert result.terminal is False
+    assert result.winner is None
+    assert result.draw is False
+    assert result.current_player == 2
+    assert result.legal_actions == (2, 3, 5, 6, 7, 8)
+
+
+def test_supplied_board_rejects_wins_by_different_players():
+    board = np.array(
+        [
+            [1, 1, 1],
+            [2, 2, 2],
+            [0, 0, 0],
+        ]
+    )
+
+    with pytest.raises(InvalidConfigurationError, match="multiple players"):
+        TicTacToeND(board=board)
+
+
+def test_supplied_board_selects_first_line_for_one_player_deterministically():
+    game = TicTacToeND(
+        board=np.array(
+            [
+                [0, 1, 0],
+                [1, 1, 1],
+                [0, 1, 0],
+            ]
+        )
+    )
+
+    result = game.result()
+
+    assert result.terminal is True
+    assert result.winner == 1
+    assert result.winning_line == ((0, 1), (1, 1), (2, 1))
